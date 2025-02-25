@@ -50,16 +50,16 @@ def maze_to_map():
                 # if statements check the adjacent cells to the selected cell
                 # Check up
                 if i > 0 and GAME_MAP[i-1][j] == 0:
-                    passages.append("up")
+                    passages.append('up')
                 # Check down
                 if i < rows - 1 and GAME_MAP[i+1][j] == 0:
-                    passages.append("down")
+                    passages.append('down')
                 # Check left
                 if j > 0 and GAME_MAP[i][j-1] == 0:
-                    passages.append("left")
+                    passages.append('left')
                 # Check right
                 if j < cols - 1 and GAME_MAP[i][j+1] == 0:
-                    passages.append("right")
+                    passages.append('right')
                 
                 count = len(passages) 
                 if count != 2: 
@@ -79,23 +79,4 @@ def maze_to_map():
                 #print("".join(row))
                 file.write("".join(row)+"\n")
 
-    
-def add_power_pellets_to_corners():
-    with open("mazecontainer.txt") as file:
-        maze = [list(line.strip()) for line in file]
-
-    height = len(maze)
-    width = len(maze[0])
-
-    corners = [(1,1), (1,width - 2), (height-2,1), (height-2, width - 2)]
-
-    for y,x in corners:
-        if 0 <= y <= height and 0 <= x < width:
-            maze[y][x] = "P"
-
-
-    modified_map = ["".join(line) for line in maze]
-    
-    with open('mazecontainer.txt', 'w') as f:
-        f.write('\n'.join(modified_map))
 

@@ -1,45 +1,45 @@
-import pygame
-from pygame.locals import *
+
 from templateForNodesAndObjects import Vector
 from constants import *
-from object import Object
-class Pacman(Object):
+import pygame
+from random import randint
+class Object:
     def __init__(self, node):
-        self.name = PACMAN
-        self.position = Vector(200, 400)
-        self.directions = {STOP:Vector(), UP:Vector(0,-1), DOWN:Vector(0,1), LEFT:Vector(-1,0), 
-    RIGHT:Vector(1,0)}
-        self.direction = STOP
-        self.speed = 90
-        self.radius = 10
-        self.colour = YELLOW
-        self.node = node
-        self.setPosition()
-        self.target = node
-        self.collide_distance = 5
-    
-    
+            self.name = None
+            self.directions = {STOP:Vector(), UP:Vector(0,-1), DOWN:Vector(0,1), LEFT:Vector(-1,0), 
+        RIGHT:Vector(1,0)}
+            self.setSpeed(100)
+            self.direction = STOP
+            self.radius = 10
+            self.colour = WHITE
+            self.node = node
+            self.setPosition()
+            self.target = node
+            self.collide_distance = 5
+            self.visible = True
+
+    def setSpeed(self, speed):
+        self.speed = speed * TILEWIDTH / 16
     def setPosition(self):
         self.position = self.node.position.copy()
+
     def update(self, dt):
         self.position += self.directions[self.direction]*self.speed*dt 
-        direction = self.getValidKey()
+        
         if self.overshotTarget():
             self.node = self.target
+            directions = self.validDirections()
+            direction = self.randomDirection(directions)
             self.target = self.getNewTarget(direction)
             if self.target is not self.node:
                 self.direction = direction
             else:
                 self.target = self.getNewTarget(self.direction)
 
-            if self.target is self.node:
-                self.direction = STOP
             
             self.setPosition()
 
-        else:
-            if self.oppositeDirection(direction):
-                self.reverseDirection()
+        
 
     def overshotTarget(self):
         if self.target is not None:
@@ -49,26 +49,32 @@ class Pacman(Object):
             node2Self = vec2.magnitudeSquared()
             return node2Self >= node2Target
         return False
+    
     def validDirection(self, direction):
         if direction is not STOP:
             if self.node.neighbours[direction] is not None:
                 return True
         return False
+    
+
+    def validDirections(self):
+        directions = []
+        for key in [UP,DOWN,LEFT,RIGHT]:
+            if self.validDirection(key):
+                if key != self.direction *-1:
+                    directions.append(key)
+
+        if len(directions) == 0:
+            directions.append(self.direction * -1)
+        return directions
+    
+    def randomDirection(self,directions):
+        return directions[randint(0,len(directions)-1)]
+    
     def getNewTarget(self, direction):
         if self.validDirection(direction):
             return self.node.neighbours[direction]
         return self.node
-    def getValidKey(self):
-        key_pressed = pygame.key.get_pressed()
-        if key_pressed[K_UP] or key_pressed[K_w]:
-            return UP
-        if key_pressed[K_DOWN] or key_pressed[K_s]:
-            return DOWN
-        if key_pressed[K_LEFT] or key_pressed[K_a]:
-            return LEFT
-        if key_pressed[K_RIGHT] or key_pressed[K_d]:
-            return RIGHT
-        return STOP
     
     def reverseDirection(self):
         self.direction = self.direction * -1
@@ -85,15 +91,6 @@ class Pacman(Object):
 
 
     def render(self, screen):
-        p = self.position.asInt()
-        pygame.draw.circle(screen, self.colour, p, self.radius)
-
-    def eatPellets(self,pelletList):
-        for pellet in pelletList:
-            distance_to_pellet = self.position - pellet.position
-            distance_to_pellet_squared = distance_to_pellet.magnitudeSquared()
-            distance_between_pellet_and_collidedistance = (pellet.radius + self.collide_distance)**2
-            if distance_to_pellet_squared <= distance_between_pellet_and_collidedistance:
-                return pellet
-        return None
-    
+        if self.visible:
+            p = self.position.asInt()
+            pygame.draw.circle(screen, self.colour, p, self.radius)

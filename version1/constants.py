@@ -11,13 +11,8 @@ BLACK = (0, 0, 0)
 YELLOW = (255, 255, 0)
 WHITE = (255,255,255)
 RED = (255,0,0)
-CYAN = (0,255,255)
-BLUE = (51,51,255)
 
 PACMAN = "PACMAN"
-PELLET = 1
-POWERPELLET = 2
-GHOST = 3
 
 # Directions
 STOP = 0
@@ -25,5 +20,3 @@ UP = 1
 DOWN = -1
 LEFT = 2
 RIGHT = -2
-PORTAL = 3
-

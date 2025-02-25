@@ -7,7 +7,7 @@ from constants import *
 class Node():
     def __init__(self,x,y):
         self.position = Vector(x,y)
-        self.neighbours = {UP:None, DOWN:None, LEFT:None, RIGHT:None, PORTAL:None}
+        self.neighbours = {UP:None, DOWN:None, LEFT:None, RIGHT:None}
 
 
     def render(self,screen):
@@ -23,7 +23,7 @@ class NodeGroup(object):
     def __init__(self,level):
         self.level = level
         self.nodesTable = {}
-        self.node_symbol = ["+","P"]
+        self.node_symbol = ["+"]
         self.path_Symbol = ["."]
         data = self.readMazeFile(level)
         self.createNodeTable(data)
@@ -109,33 +109,7 @@ class NodeGroup(object):
     def getStartTempNode(self):
         nodes = list(self.nodesTable.values())
         return nodes[0]
-    
+
     def render(self,screen):
         for node in self.nodesTable.values():
             node.render(screen)
-
-    def findPortalNodes(self,vertical_range = 10): # this needs to be checked out
-        nodes = list(self.nodesTable.values())
-        
-        all_y = [node.position.y for node in nodes]
-        mid_y = (min(all_y) + max(all_y)) // 2
-        candidates = []
-        for node in nodes:
-            if (mid_y - vertical_range <= node.position.y <= mid_y+vertical_range):
-                if node.position[1]:
-                    candidates.append(node)
-
-        if len(candidates) >= 2:
-            return candidates[0]
-
-    def setupPortalPair(self, pair1, pair2):
-        key1 = self.constructKey(*pair1)
-        key2 = self.constructKey(*pair2)
-        if key1 in self.nodesTable.keys() and key2 in self.nodesTable.keys():
-            self.nodesTable[key1].neighbors[PORTAL] = self.nodesTable[key2]
-            self.nodesTable[key2].neighbors[PORTAL] = self.nodesTable[key1]
-    
-
-
-
-                    

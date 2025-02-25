@@ -2,8 +2,7 @@ import pygame
 from pygame.locals import *
 from templateForNodesAndObjects import Vector
 from constants import *
-from object import Object
-class Pacman(Object):
+class Pacman(object):
     def __init__(self, node):
         self.name = PACMAN
         self.position = Vector(200, 400)
@@ -16,9 +15,6 @@ class Pacman(Object):
         self.node = node
         self.setPosition()
         self.target = node
-        self.collide_distance = 5
-    
-    
     def setPosition(self):
         self.position = self.node.position.copy()
     def update(self, dt):
@@ -87,13 +83,3 @@ class Pacman(Object):
     def render(self, screen):
         p = self.position.asInt()
         pygame.draw.circle(screen, self.colour, p, self.radius)
-
-    def eatPellets(self,pelletList):
-        for pellet in pelletList:
-            distance_to_pellet = self.position - pellet.position
-            distance_to_pellet_squared = distance_to_pellet.magnitudeSquared()
-            distance_between_pellet_and_collidedistance = (pellet.radius + self.collide_distance)**2
-            if distance_to_pellet_squared <= distance_between_pellet_and_collidedistance:
-                return pellet
-        return None
-    
