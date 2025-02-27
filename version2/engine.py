@@ -20,9 +20,8 @@ class GameEngine():
        
         self.nodes = NodeGroup("mazecontainer.txt")
         self.pellets = PelletGroup("mazecontainer.txt")
-        
+        self.ghost = Ghost(self.nodes.getStartTempNode())
         self.pacman = Pacman(self.nodes.getStartTempNode())
-        self.ghost = Ghost(self.nodes.getStartTempNode(),self.pacman)
     
         
 
@@ -31,7 +30,7 @@ class GameEngine():
         self.background.fill((0,0,0))
 
     def update(self):
-        dt = self.clock.tick(60) / 1000
+        dt = self.clock.tick(30) / 1000
         self.pellets.update(dt)
         self.pacman.update(dt)
         self.ghost.update(dt)

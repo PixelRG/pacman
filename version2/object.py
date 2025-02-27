@@ -1,4 +1,4 @@
-# this template will be inherited for pacman and gohsts
+
 from templateForNodesAndObjects import Vector
 from constants import *
 import pygame
@@ -8,9 +8,8 @@ class Object:
             self.name = None
             self.directions = {STOP:Vector(), UP:Vector(0,-1), DOWN:Vector(0,1), LEFT:Vector(-1,0), 
         RIGHT:Vector(1,0)}
-            self.direction = STOP
             self.setSpeed(100)
-            self.directionMethod = self.randomDirection
+            self.direction = STOP
             self.radius = 10
             self.colour = WHITE
             self.node = node
@@ -18,8 +17,6 @@ class Object:
             self.target = node
             self.collide_distance = 5
             self.visible = True
-            self.goal = None
-
 
     def setSpeed(self, speed):
         self.speed = speed * TILEWIDTH / 16
@@ -32,7 +29,7 @@ class Object:
         if self.overshotTarget():
             self.node = self.target
             directions = self.validDirections()
-            direction = self.directionMethod(directions)
+            direction = self.randomDirection(directions)
             self.target = self.getNewTarget(direction)
             if self.target is not self.node:
                 self.direction = direction

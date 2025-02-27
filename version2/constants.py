@@ -11,7 +11,8 @@ BLACK = (0, 0, 0)
 YELLOW = (255, 255, 0)
 WHITE = (255,255,255)
 RED = (255,0,0)
-CYAN = (120,255,255)
+CYAN = (0,255,255)
+BLUE = (51,51,255)
 
 PACMAN = "PACMAN"
 PELLET = 1
@@ -25,10 +26,4 @@ DOWN = -1
 LEFT = 2
 RIGHT = -2
 PORTAL = 3
-
-# Ghost behaviours
-SCATTER = 0
-CHASE = 1
-FREIGHT = 2
-SPAWN = 3
 
