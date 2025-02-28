@@ -5,7 +5,7 @@ from nodesinmaze import NodeGroup
 from make_maze_to_text import *
 from pellets import PelletGroup
 from ghosts import Ghost
-
+import random
 
 class GameEngine():
     def __init__(self):
@@ -14,12 +14,16 @@ class GameEngine():
         self.screen = pygame.display.set_mode(SCREENSIZE,0,32)
         self.background = None
         self.clock = pygame.time.Clock()
+        self.debug_font = pygame.font.SysFont("Arial",24)
 
     def startGame(self):
         self.setBackground()
        
         self.nodes = NodeGroup("mazecontainer.txt")
         self.pellets = PelletGroup("mazecontainer.txt")
+        homekey = self.nodes.createHomeNodes(9,9)
+        self.nodes.connectGhostHomeNodes(homekey, (15,8),UP)
+        # self.nodes.connectGhostHomeNodes(homekey,(10,8),UP)
         
         self.pacman = Pacman(self.nodes.getStartTempNode())
         self.ghost = Ghost(self.nodes.getStartTempNode(),self.pacman)
@@ -31,9 +35,10 @@ class GameEngine():
         self.background.fill((0,0,0))
 
     def update(self):
-        dt = self.clock.tick(60) / 1000
+        dt = self.clock.tick(30) / 1000
         self.pellets.update(dt)
         self.pacman.update(dt)
+        
         self.ghost.update(dt)
         self.checkEvents()
         self.render()
@@ -49,11 +54,12 @@ class GameEngine():
         
         self.screen.blit(self.background,(0,0))
      
-        self.nodes.render(self.screen)
-        self.pellets.render(self.screen)
+        self.nodes.render(self.screen,OFFSET_X,OFFSET_Y)
+        self.pellets.render(self.screen,OFFSET_X,OFFSET_Y)
         self.checkPellet()
-        self.pacman.render(self.screen)
-        self.ghost.render(self.screen)
+        self.pacman.render(self.screen,OFFSET_X,OFFSET_Y)
+        self.ghost.render(self.screen,OFFSET_X,OFFSET_Y)
+        self.renderDebugInfo()
         pygame.display.update()
 
     def checkPellet(self):
@@ -62,6 +68,38 @@ class GameEngine():
             self.pellets.number_of_eaten += 1
             self.pellets.pelletList.remove(pellet)
 
+            if pellet.name== POWERPELLET:
+                self.ghost.startFright()
+
+    def renderDebugInfo(self):
+
+        mode = self.ghost.mode.getCurrentMode()
+        grid_x, grid_y = self.ghost.getGridPosition()
+        
+        remaining = 0
+        if mode in [SCATTER, CHASE]:
+            mainmode = self.ghost.mode.mainmode
+            remaining = max(0, mainmode.limitingTime - mainmode.timer)
+        elif mode == FRIGHT:
+            remaining = max(0, self.ghost.mode.limitingTime - self.ghost.mode.timer)
+
+
+        mode_text = f"Ghost Mode: {mode}"
+        pos_text = f"Position: ({grid_x}, {grid_y})"
+        timer_text = f"Time left: {remaining: .1f}s"
+
+        #fps_text = f"FPS: {self.clock.get_fps():1.f}"
+        mode_surface = self.debug_font.render(mode_text, True, WHITE)
+        pos_surface = self.debug_font.render(pos_text, True, WHITE)
+        timer_surface = self.debug_font.render(timer_text,True,WHITE)
+        #fps_surface = self.debug_font.render(fps_text, True, WHITE)
+    
+        # Display text
+        y_offset = 10
+        self.screen.blit(mode_surface, (10, y_offset))
+        self.screen.blit(pos_surface, (10, y_offset + 30))
+        self.screen.blit(timer_surface,(10,y_offset+60))
+        #self.screen.blit(fps_surface, (10, y_offset + 60))
 
 def run():
     maze_to_map()
@@ -70,6 +108,7 @@ def run():
     game.startGame()
     while True:
         game.update()
+
 
 
 run()

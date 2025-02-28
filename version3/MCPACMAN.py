@@ -10,7 +10,7 @@ class Pacman(Object):
         self.directions = {STOP:Vector(), UP:Vector(0,-1), DOWN:Vector(0,1), LEFT:Vector(-1,0), 
     RIGHT:Vector(1,0)}
         self.direction = STOP
-        self.setSpeed(100)
+        self.setSpeed(90)
         self.radius = 10
         self.colour = YELLOW
         self.node = node

@@ -93,7 +93,7 @@ class Object:
         return False
 
 
-    def render(self, screen,offset_x = 0, offset_y = 0):
+    def render(self, screen):
         if self.visible:
-            pos = (self.position.x + offset_x, self.position.y + offset_y)
-            pygame.draw.circle(screen, self.colour, (int(pos[0]), int(pos[1])), self.radius)
+            p = self.position.asInt()
+            pygame.draw.circle(screen, self.colour, p, self.radius)

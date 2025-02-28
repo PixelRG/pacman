@@ -10,14 +10,13 @@ class Node():
         self.neighbours = {UP:None, DOWN:None, LEFT:None, RIGHT:None, PORTAL:None}
 
 
-    def render(self,screen,offset_x = 0, offset_y = 0):
-        offset_pos = self.position + Vector(offset_x,offset_y)
+    def render(self,screen):
         for n in self.neighbours.keys():
             if self.neighbours[n] is not None:
-                line_start = offset_pos.asTuple()
-                line_end = (self.neighbours[n].position+ Vector(offset_x,offset_y)).asTuple()
+                line_start = self.position.asTuple()
+                line_end = self.neighbours[n].position.asTuple()
                 pygame.draw.line(screen, WHITE, line_start, line_end, 4)                
-                pygame.draw.circle(screen, LIGHT_BLUE, offset_pos.asInt(), 12)
+                pygame.draw.circle(screen, RED, self.position.asInt(), 12)
 
 
 class NodeGroup(object):
@@ -30,8 +29,6 @@ class NodeGroup(object):
         self.createNodeTable(data)
         self.connectHorizontally(data)
         self.connectVertically(data)
-        self.homekey = None
-
         
     """
     - self.nodesTable is a dictionary (better way of accessing data rather than using an array)
@@ -113,9 +110,9 @@ class NodeGroup(object):
         nodes = list(self.nodesTable.values())
         return nodes[0]
     
-    def render(self,screen,offset_x = 0, offset_y = 0):
+    def render(self,screen):
         for node in self.nodesTable.values():
-            node.render(screen,offset_x,offset_y)
+            node.render(screen)
 
     def findPortalNodes(self,vertical_range = 10): # this needs to be checked out
         nodes = list(self.nodesTable.values())
@@ -138,26 +135,6 @@ class NodeGroup(object):
             self.nodesTable[key1].neighbors[PORTAL] = self.nodesTable[key2]
             self.nodesTable[key2].neighbors[PORTAL] = self.nodesTable[key1]
     
-    def createHomeNodes(self,xoffset,yoffset):# 11 columns wide (index 0-10)
-        ghosthomedata = np.array([
-            ['X', 'X', 'X', 'X', 'X', 'X', '+', 'X', 'X', 'X', 'X', 'X'],  # Row 0
-            ['X', 'X', 'X', 'X', 'X', 'X', '.', 'X', 'X', 'X', 'X', 'X'],  # Row 1
-            ['X', 'X', 'X', '+', 'X', 'X', '.', 'X', 'X', '+', 'X', 'X'],  # Row 2 (center)
-            ['X', 'X', 'X', '+', '.', '.', '+', '.', '.', '+', 'X', 'X'],  # Row 3
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']   # Row 4
-        ], dtype="<U1") 
-    
-        self.createNodeTable(ghosthomedata,xoffset,yoffset)
-        self.connectHorizontally(ghosthomedata,xoffset,yoffset)
-        self.connectVertically(ghosthomedata,xoffset,yoffset)
-        self.homekey = self.constructKey(xoffset+6,yoffset)
-        return self.homekey
-
-    def connectGhostHomeNodes(self,homekey,otherKey,direction):
-        key = self.constructKey(*otherKey)
-        self.nodesTable[homekey].neighbours[direction] = self.nodesTable[key]
-        self.nodesTable[key].neighbours[direction*-1] = self.nodesTable[homekey]
-
 
 
 

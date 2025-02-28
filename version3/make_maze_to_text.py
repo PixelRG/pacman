@@ -43,7 +43,7 @@ def maze_to_map():
         for j in range(cols):
             if GAME_MAP[i][j] == 1:
                 new_row.append("X") # Wall
-            else: 
+            else:
                 # Check adjacent passages of each cell/tile
                 passages = []
                 # these conditions check the connections with the cell

@@ -1,5 +1,5 @@
 from constants import *
-
+from random import randint
 class MainMode():
     def __init__(self):
         self.timer = 0
@@ -7,18 +7,18 @@ class MainMode():
 
     def scatter(self):
         self.mode = SCATTER
-        self.time = 7 # SUBJECT TO CHANGE
+        self.limitingTime = 7 # SUBJECT TO CHANGE
         self.timer = 0
 
     def chase(self):
         self.mode = CHASE
-        self.time = 20
+        self.limitingTime = 20
         self.timer = 0
 
 
     def update(self,dt):
         self.timer += dt
-        if self.timer >= self.time:
+        if self.timer >= self.limitingTime:
             if self.mode == SCATTER:
                 self.chase()
 
@@ -29,11 +29,30 @@ class MainMode():
 class ModeController():
     def __init__(self,entity):
         self.timer = 0
-        self.time = None
+        self.limitingTime = None
         self.mainmode = MainMode()
         self.current = self.mainmode.mode
         self.entity = entity
-
+    def getCurrentMode(self):
+        return self.current
     def update(self,dt):
         self.mainmode.update(dt)
-        self.current = self.mainmode.mode
+        if self.current == FRIGHT:
+            self.timer += dt
+            if self.timer >= self.limitingTime:
+                self.time = None
+                self.entity.normalMode()
+                self.current = self.mainmode.mode
+        if self.current in [SCATTER, CHASE]:
+            self.mainmode.update(dt)
+            self.current = self.mainmode.mode
+
+
+    def setFrightMode(self):
+        if self.current in [SCATTER,CHASE]:
+            self.timer = 0
+            self.limitingTime = 7
+            self.current = FRIGHT
+        elif self.current == FRIGHT:
+            self.timer = 0
+

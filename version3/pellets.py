@@ -40,12 +40,13 @@ class Pellet():
         self.points = 10
         self.visible = True
 
-    def render(self, screen, offset_x=0, offset_y=0):  # Add offset params
+    def render(self,screen):
         if self.visible:
-            # Apply offsets to position
-            x = self.position.x + offset_x
-            y = self.position.y + offset_y
-            pygame.draw.circle(screen, self.colour, (int(x), int(y)), self.radius)
+            position = self.position.asInt()
+
+            pygame.draw.circle(screen, self.colour,position,self.radius)
+
+
 
 class Powerpellet(Pellet):
     def __init__(self,row,column):
@@ -53,13 +54,13 @@ class Powerpellet(Pellet):
         self.name = POWERPELLET
         self.radius = int(8 * TILEWIDTH / 16)
         self.points = 50
-        self.flashTime = 0.4
+        self.flashTime = 0.2
         self.timer = 0
 
     def update(self,dt):
         self.timer = self.timer + dt
         if self.timer >= self.flashTime:
-            self.visible = not(self.visible)
+            self.visble = not(self.visible)
             self.timer = 0
 
 
@@ -84,9 +85,8 @@ class PelletGroup():
                 if data[row][col] in [".","+"]:
                     self.pelletList.append(Pellet(row,col))
                 elif data[row][col] in ["P"]:
-                    pp = Powerpellet(row,col)
-                    self.pelletList.append(pp)
-                    self.powerpellets.append(pp)
+                    self.pelletList.append(Powerpellet(row,col))
+                    self.powerpellets.append(Powerpellet(row,col))
 
     def readPelletfile(self, textfile):
         with open(textfile, 'r') as f:
@@ -99,7 +99,7 @@ class PelletGroup():
         
         return False
     
-    def render(self, screen, offset_x=0, offset_y=0):  # Add offset params
+    def render(self,screen):
         for pellet in self.pelletList:
-            pellet.render(screen, offset_x, offset_y)  # Pass offsets
+            pellet.render(screen)
 
