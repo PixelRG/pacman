@@ -63,19 +63,10 @@ class Pacman(Object):
     
     def eatPellets(self,pelletList):
         for pellet in pelletList:
-            if self.collideCheck(pellet):
+            distance_to_pellet = self.position - pellet.position
+            distance_to_pellet_squared = distance_to_pellet.magnitudeSquared()
+            distance_between_pellet_and_collidedistance = (pellet.radius + self.collide_distance)**2
+            if distance_to_pellet_squared <= distance_between_pellet_and_collidedistance:
                 return pellet
         return None
     
-    def collideGhost(self,ghost):
-        return self.collideCheck(ghost)
-    
-    def collideCheck(self,other):
-        distance_to_object = self.position - other.position
-        distance_to_object_squared = distance_to_object.magnitudeSquared()
-        distance_between_object_and_collidedistance = (other.radius + self.collide_distance)**2
-        if distance_to_object_squared <= distance_between_object_and_collidedistance:
-            return True
-        
-        return False
-

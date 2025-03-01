@@ -10,20 +10,17 @@ class Node():
         self.neighbours = {UP:None, DOWN:None, LEFT:None, RIGHT:None, PORTAL:None}
 
 
-    def render(self,screen,offset_x = 0, offset_y = 0,homekey = None):
-        node_colour = SILVER  # Default color (RED for normal node)
-        if homekey and self.position.asTuple() == homekey:  # Compare positions
-            node_colour = BLUE  # Color for homekey node (use any color you want)
+    def render(self,screen,offset_x = 0, offset_y = 0):
         offset_pos = self.position + Vector(offset_x,offset_y)
         for n in self.neighbours.keys():
             if self.neighbours[n] is not None:
                 line_start = offset_pos.asTuple()
                 line_end = (self.neighbours[n].position+ Vector(offset_x,offset_y)).asTuple()
                 pygame.draw.line(screen, WHITE, line_start, line_end, 4)                
-                pygame.draw.circle(screen, node_colour, offset_pos.asInt(), 12)
+                pygame.draw.circle(screen, LIGHT_BLUE, offset_pos.asInt(), 12)
 
 
-class NodeGroup():
+class NodeGroup(object):
     def __init__(self,level):
         self.level = level
         self.nodesTable = {}
@@ -111,18 +108,14 @@ class NodeGroup():
     def constructKey(self, x, y):
         return x * TILEWIDTH, y * TILEHEIGHT
     
-    def getNodeFromTiles(self,x,y):
-        key = self.constructKey(x,y)
-        return self.nodesTable.get(key)
+      
     def getStartTempNode(self):
         nodes = list(self.nodesTable.values())
         return nodes[0]
     
     def render(self,screen,offset_x = 0, offset_y = 0):
         for node in self.nodesTable.values():
-            node.render(screen,offset_x,offset_y, homekey=self.homekey)
-
-        
+            node.render(screen,offset_x,offset_y)
 
     def findPortalNodes(self,vertical_range = 10): # this needs to be checked out
         nodes = list(self.nodesTable.values())
