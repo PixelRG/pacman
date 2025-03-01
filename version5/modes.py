@@ -7,7 +7,7 @@ class MainMode():
 
     def scatter(self):
         self.mode = SCATTER
-        self.limitingTime = 15 # SUBJECT TO CHANGE
+        self.limitingTime = 7 # SUBJECT TO CHANGE
         self.timer = 0
 
     def chase(self):

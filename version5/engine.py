@@ -24,14 +24,11 @@ class GameEngine():
         self.pellets = PelletGroup("mazecontainer.txt")
         homekey = self.nodes.createHomeNodes(9,9)
         self.nodes.connectGhostHomeNodes(homekey, (15,8),UP)
-
-        self.pacman = Pacman(self.nodes.getNodeFromTiles(15,14))
+        # self.nodes.connectGhostHomeNodes(homekey,(10,8),UP)
+        
+        self.pacman = Pacman(self.nodes.getStartTempNode())
         self.ghosts = GhostGroup(self.nodes.getStartTempNode(),self.pacman)
         self.ghosts.setSpawnNode(self.nodes.getNodeFromTiles(15,9))
-        self.ghosts.blinky.setStartNode(self.nodes.getNodeFromTiles(15,8))
-        self.ghosts.inky.setStartNode(self.nodes.getNodeFromTiles(15,12))
-        self.ghosts.clyde.setStartNode(self.nodes.getNodeFromTiles(12,12))
-        self.ghosts.pinky.setStartNode(self.nodes.getNodeFromTiles(18,12))
         
 
     def setBackground(self):
@@ -76,39 +73,43 @@ class GameEngine():
 
     def renderDebugInfo(self):
         y_offset = 10
-        ghost= self.ghosts.pinky
-        ghost.visible = True
+        ghost_index = 0
         
     
-        # Get ghost-specific info
-        mode = ghost.mode.getCurrentMode()
-        grid_x, grid_y = ghost.getGridPosition()
+            # Get ghost-specific info
+        mode = self.ghosts.blinky.mode.getCurrentMode()
+        grid_x, grid_y = self.ghosts.blinky.getGridPosition()
 
-           
+        column = ghost_index // 2  # 0 for first column, 1 for second
+        row = ghost_index % 2     # 0 or 1 for row in column
+        
+        x_position = 10 + (400 * column)
+        y_offset = y_offset + (row * 120)  # 120px between ghosts in same column
+            
         
         # Calculate remaining time
         remaining = 0
         if mode in [SCATTER, CHASE]:
-            mainmode = ghost.mode.mainmode
+            mainmode = self.ghosts.blinky.mode.mainmode
             remaining = max(0, mainmode.limitingTime - mainmode.timer)
         elif mode == FRIGHT:
-            remaining = max(0, ghost.mode.limitingTime - ghost.mode.timer)
+            remaining = max(0, self.ghosts.blinky.mode.limitingTime - self.ghosts.blinky.mode.timer)
         elif mode == SPAWN:
             remaining = "N/A"
 
         # Create text surfaces
-        name_text = f"{ghost.name}:"
+        name_text = f"{self.ghosts.blinky.name}:"
         mode_text = f"Mode: {mode}"
         pos_text = f"Position: ({grid_x}, {grid_y})"
         timer_text = f"Timer: {remaining:.1f}s" if isinstance(remaining, float) else f"Timer: {remaining}"
 
         #Check if Pacman collides with the ghost
-        collision_text = "Collision with Pacman: No"
-        if self.pacman.collideCheck(ghost):
-            collision_text = "Collision with Pacman: Yes"
+        collision_text = "Collision with Ghost: No"
+        if self.pacman.collideCheck(self.ghosts.blinky):
+            collision_text = "Collision with Ghost: Yes"
 
         # Render text
-        name_surface = self.debug_font.render(name_text, True, ghost.colour)
+        name_surface = self.debug_font.render(name_text, True, self.ghosts.blinky.colour)
         mode_surface = self.debug_font.render(mode_text, True, WHITE)
         pos_surface = self.debug_font.render(pos_text, True, WHITE)
         timer_surface = self.debug_font.render(timer_text, True, WHITE)

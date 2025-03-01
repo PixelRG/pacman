@@ -78,14 +78,14 @@ class Blinky(Ghost):
         Ghost.__init__(self,node,pacman, blinky)
         self.name = BLINKY
         self.colour = RED
-        self.visible = True
+
 
 class Pinky(Ghost):
     def __init__(self,node, pacman = None, blinky = None):
         Ghost.__init__(self,node,pacman,blinky)
         self.name = PINKY
         self.colour = PINK
-        self.visible = True
+        self.visible = False
 
     def scatter(self):
         self.goal = Vector(TILEWIDTH*COLS,0)
@@ -98,7 +98,7 @@ class Inky(Ghost):
         Ghost.__init__(self,node,pacman,blinky)
         self.name =INKY
         self.colour = TEAL
-        self.visible = True
+        self.visible = False
 
     def scatter(self):
         self.goal = Vector(TILEWIDTH*COLS, TILEWIDTH * ROWS)
@@ -116,7 +116,7 @@ class Clyde(Ghost):
         Ghost.__init__(self,node,pacman,blinky)
         self.name = CLYDE
         self.colour = ORANGE
-        self.visible = True
+        self.visible = False
 
     def scatter(self):
         self.goal = Vector(0,TILEWIDTH*ROWS)

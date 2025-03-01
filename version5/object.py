@@ -19,13 +19,6 @@ class Object:
             self.collide_distance = 5
             self.visible = True
             self.goal = None
-            self.setStartNode(node)
-
-    def setStartNode(self, node):
-        self.node = node
-        self.startNode = node
-        self.target = node
-        self.setPosition()
 
 
     def setSpeed(self, speed):

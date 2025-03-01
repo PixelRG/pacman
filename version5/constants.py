@@ -1,0 +1,60 @@
+TILEWIDTH = 25
+TILEHEIGHT = 25
+ROWS = 24
+COLS = 32
+LARGER_SCREENWIDTH = 900
+LARGER_SCREENHEIGHT = 900
+SCREENWIDTH = COLS * TILEWIDTH 
+SCREENHEIGHT = ROWS * TILEHEIGHT 
+
+OFFSET_X = (LARGER_SCREENWIDTH - SCREENWIDTH) // 2
+OFFSET_Y = (LARGER_SCREENHEIGHT - SCREENHEIGHT)// 2
+
+
+SCREENSIZE = (LARGER_SCREENHEIGHT,LARGER_SCREENHEIGHT)
+
+# Colours
+BLACK = (0, 0, 0)
+YELLOW = (255, 255, 0)
+WHITE = (255,255,255)
+SILVER = (192, 192, 192)
+RED = (255,0,0)
+CYAN = (120,255,255)
+BLUE = (0,0,200)
+PINK = (255,100,150)
+TEAL = (100,255,255)
+ORANGE = (230,190,40)
+
+PACMAN = "PACMAN"
+PELLET = 1
+POWERPELLET = 2
+GHOST = 3
+
+# Directions
+STOP = 0
+UP = 1
+DOWN = -1
+LEFT = 2
+RIGHT = -2
+PORTAL = 3
+
+
+# Ghost name
+BLINKY = "blinky"
+PINKY = "pinky"
+INKY = "inky"
+CLYDE = "clyde"
+# Ghost behaviours
+SCATTER = "scatter"
+CHASE = "chase"
+FRIGHT = "frightened"
+SPAWN = "spawn mode"
+
+# Ghost home values
+home_x_start = 9
+home_y_start = 10
+
+
+
+
+
