@@ -12,7 +12,6 @@ class Object:
             self.setSpeed(100)
             self.directionMethod = self.randomDirection
             self.radius = 10
-            self.defaultcolour = None
             self.colour = WHITE
             self.node = node
             self.setPosition()
@@ -28,9 +27,7 @@ class Object:
         self.target = node
         self.setPosition()
 
-    def getGridPosition(self):
-        return (self.position.x // TILEWIDTH, self.position.y // TILEHEIGHT)
-    
+
     def setSpeed(self, speed):
         self.speed = speed * TILEWIDTH / 16
     def setPosition(self):
@@ -65,9 +62,8 @@ class Object:
     
     def validDirection(self, direction):
         if direction is not STOP:
-            if self.name in self.node.access[direction]:
-                if self.node.neighbours[direction] != None:
-                    return True
+            if self.node.neighbours[direction] is not None:
+                return True
         return False
     
 
@@ -108,8 +104,3 @@ class Object:
         if self.visible:
             pos = (self.position.x + offset_x, self.position.y + offset_y)
             pygame.draw.circle(screen, self.colour, (int(pos[0]), int(pos[1])), self.radius)
-    
-    def reset(self):
-        self.setStartNode(self.startNode)
-        self.direction = STOP
-        self.visible = True

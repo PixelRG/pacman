@@ -8,16 +8,7 @@ class Node():
     def __init__(self,x,y):
         self.position = Vector(x,y)
         self.neighbours = {UP:None, DOWN:None, LEFT:None, RIGHT:None, PORTAL:None}
-        self.access = {UP: [PACMAN,BLINKY,INKY,PINKY,CLYDE],
-                       DOWN: [PACMAN,BLINKY,INKY,PINKY,CLYDE],
-                       LEFT: [PACMAN,BLINKY,INKY,PINKY,CLYDE],
-                       RIGHT: [PACMAN,BLINKY,INKY,PINKY,CLYDE]}
-        
 
-    
-    def __hash__(self):
-        return hash(self.position)
-  
 
     def render(self,screen,offset_x = 0, offset_y = 0,homekey = None):
         node_colour = SILVER  # Default color (RED for normal node)
@@ -31,14 +22,6 @@ class Node():
                 pygame.draw.line(screen, WHITE, line_start, line_end, 4)                
                 pygame.draw.circle(screen, node_colour, offset_pos.asInt(), 12)
 
-    def denyAccess(self,direction,object):
-        if object.name in self.access[direction]:
-            self.access[direction].remove(object.name)
-
-    def allowAccess(self,direction, object):
-        if object.name not in self.access[direction]:
-            self.access[direction].append(object.name)
-   
 
 class NodeGroup():
     def __init__(self,level):
@@ -183,13 +166,6 @@ class NodeGroup():
         self.nodesTable[key].neighbours[direction*-1] = self.nodesTable[homekey]
 
 
-   
 
-    def allowHomeAccess(self,object):
-        self.nodesTable[self.homekey].allowAccess(DOWN,object)
 
-    def denyHomeAccess(self,object):
-        self.nodesTable[self.homekey].denyAccess(DOWN,object)
-
-    
-    
+                    

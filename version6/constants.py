@@ -16,9 +16,6 @@ SCREENSIZE = (LARGER_SCREENHEIGHT,LARGER_SCREENHEIGHT)
 # Colours
 BLACK = (0, 0, 0)
 YELLOW = (255, 255, 0)
-PAC_YELLOW = (254, 231, 21)
-CHARCOAL = (16, 24, 32)
-LIGHT_GREEN = (0, 200, 0)
 WHITE = (255,255,255)
 SILVER = (192, 192, 192)
 RED = (255,0,0)
@@ -52,18 +49,12 @@ SCATTER = "scatter"
 CHASE = "chase"
 FRIGHT = "frightened"
 SPAWN = "spawn mode"
-DEATH = "death"
-NORMAL = 1
-EYES = 2
+
 # Ghost home values
 home_x_start = 9
 home_y_start = 10
 
 
-SCORETEXT = 0 
-LEVELTEXT = 1
-READYTEXT = 2
-PAUSETEXT = 3
-GAMEOVERTEXT = 4
+
 
 

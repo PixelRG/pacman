@@ -5,11 +5,36 @@ from constants import *
 import numpy as np
 
 
+
+# def add_power_pellets_to_corners():
+#     with open("pellettestfile.txt") as file:
+#         maze = [list(line.strip()) for line in file]
+
+#     height = len(maze)
+#     width = len(maze[0])
+
+#     corners = [(1,1), (1,width - 2), (height-2,1), (height-2, width - 2)]
+
+#     for y,x in corners:
+#         if 0 <= y <= height and 0 <= x < width:
+#             maze[y][x] = "P"
+
+
+#     modified_map = ["".join(line) for line in maze]
+    
+#     with open('pellettestfile.txt', 'w') as f:
+#         f.write('\n'.join(modified_map))
+
+
+
+# add_power_pellets_to_corners()
+
+
 class Pellet():
     def __init__(self,row,column):
         self.name = PELLET
         self.position = Vector(column * TILEWIDTH, row * TILEWIDTH )
-        self.colour = LIGHT_GREEN
+        self.colour = WHITE
         self.radius = int(4 * TILEWIDTH / 16)
         self.colliderADIUS = int(4* TILEWIDTH / 16)
         self.points = 10

@@ -33,8 +33,6 @@ class Vector():
                 return True
         return False
     
-    def __hash__(self):
-        return hash((round(self.x, 4), round(self.y, 4)))  # Rounded for float precision
     
     def magnitudeSquared(self): # We're going to use this more often
         return self.x**2 + self.y**2
