@@ -7,7 +7,7 @@ class MainMode():
 
     def scatter(self):
         self.mode = SCATTER
-        self.limitingTime = randint(5,9) # SUBJECT TO CHANGE
+        self.limitingTime = 15 # SUBJECT TO CHANGE
         self.timer = 0
 
     def chase(self):
@@ -27,22 +27,38 @@ class MainMode():
 
 
 class ModeController():
-    def __init__(self,entity):
+    def __init__(self,object):
         self.timer = 0
         self.limitingTime = None
         self.mainmode = MainMode()
         self.current = self.mainmode.mode
-        self.entity = entity
+        self.object = object
+
     def getCurrentMode(self):
         return self.current
+    
     def update(self,dt):
         self.mainmode.update(dt)
         if self.current == FRIGHT:
             self.timer += dt
             if self.timer >= self.limitingTime:
                 self.time = None
-                self.entity.normalMode()
+                self.object.normalMode()
                 self.current = self.mainmode.mode
+        if self.current in [SCATTER, CHASE]:
+            self.mainmode.update(dt)
+            self.current = self.mainmode.mode
+        
+        if self.current == SPAWN:
+            if self.object.node == self.object.spawnNode:
+                self.object.normalMode()
+                self.current = self.mainmode.mode
+                
+
+
+    def setSpawnMode(self):
+        if self.current == FRIGHT:
+            self.current = SPAWN
 
 
     def setFrightMode(self):
@@ -50,6 +66,7 @@ class ModeController():
             self.timer = 0
             self.limitingTime = 7
             self.current = FRIGHT
+            self.object.startFright()
         elif self.current == FRIGHT:
             self.timer = 0
 

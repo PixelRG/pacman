@@ -207,10 +207,10 @@ maze = Maze(16,  24,  """
 while maze.add_wall_obstacle(extend=True):
     pass
 
-with open("mazecontainer.txt", "w") as file:
-    for line in maze.maze_to_string().splitlines():
-        newline = line[:16] + line[:16][::-1]
-        file.write(newline + "\n")
+# with open("mazecontainer.txt", "w") as file:
+#     for line in maze.maze_to_string().splitlines():
+#         newline = line[:16] + line[:16][::-1]
+#         file.write(newline + "\n")
 
 
 

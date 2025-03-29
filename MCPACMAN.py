@@ -2,55 +2,58 @@ import pygame
 from pygame.locals import *
 from templateForNodesAndObjects import Vector
 from constants import *
-from object import Object
-class Pacman(Object):
+from sprite import Sprite
+
+class Pacman(Sprite):
     def __init__(self, node):
-        Object.__init__(self,node)
+        # inherits methods for movement and updating of nodes from sprite class
+        Sprite.__init__(self,node)
         self.name = PACMAN
-        self.directions = {STOP:Vector(), UP:Vector(0,-1), DOWN:Vector(0,1), LEFT:Vector(-1,0), 
-    RIGHT:Vector(1,0)}
-        self.direction = LEFT
-        self.setSpeed(100)
-        self.radius = 10
-        self.colour = PAC_YELLOW
-        self.node = node
-        self.initialNode = node
-        self.target = node
-        self.collide_distance = 5
-        self.visible = True
-        self.collide_node = None
-        self.collide_target = None
-        self.collide_direction = STOP
-        self.alive = True
-        
-    def setPosition(self):
-        self.position = self.node.position.copy()
+      
+        self.setSpeed(90)
+        self.colour = YELLOW
+        self.collide_distance = int(5* TILEWIDTH / 16)
+
 
     def update(self, dt):
+        # updates position based on current position and speed
         self.position += self.directions[self.direction]*self.speed*dt 
+        
+        # Check for a valid keypress to change direction
         direction = self.getValidKey()
-        if self.overshotTarget():
-            self.node = self.target
-            self.target = self.getNewTarget(direction)
-            if self.target is not self.node:
+
+        # when pacman moves past its target, its target node updates
+        # ensures continuous movement
+        if self.overshot_target():
+            
+            self.current_node = self.target_node # updates its current node
+            
+            # gets a new target
+            self.target_node = self.get_new_target_node(direction)
+            
+            # if target node is not the same current node,
+            # updates direction
+            if self.target_node != self.current_node:
                 self.direction = direction
             else:
-                self.target = self.getNewTarget(self.direction)
+                self.target_node = self.get_new_target_node(self.direction)
 
-            if self.target is self.node:
+            # this happens when pacman hits the edge or is at dead end
+            if self.target_node == self.current_node:
                 self.direction = STOP
             
-            self.setPosition()
+            # updates position 
+            self.reset_position()
 
         else:
-            if self.oppositeDirection(direction):
-                self.reverseDirection()
+            if self.is_opposite_direction(direction):
+                self.reverse_movement()
 
     
-    def showSpeed(self):
-        return self.speed
+    
     
     def getValidKey(self):
+        # perform input key validation
         key_pressed = pygame.key.get_pressed()
         if key_pressed[K_UP] or key_pressed[K_w]:
             return UP
@@ -64,28 +67,29 @@ class Pacman(Object):
     
     
 
-    def reset(self):
-        Object.reset(self)
-        self.direction = LEFT
-
-        self.alive = True
-
-    def die(self):
-        self.alive = False
-        self.reset()
     
     def eatPellets(self,pelletList):
+        # verifies whether Pacman has eaten a pellet
         for pellet in pelletList:
-            if self.collideCheck(pellet):
+            distance_to_pellet = self.position - pellet.position
+            distance_to_pellet_squared = distance_to_pellet.magnitudeSquared()
+            distance_between_pellet_and_collidedistance = (pellet.radius + self.collide_distance)**2
+
+            
+            if distance_to_pellet_squared <= distance_between_pellet_and_collidedistance:
                 return pellet
         return None
     
-    def collideCheck(self,other):
-        distance_to_object = self.position - other.position
-        distance_to_object_squared = distance_to_object.magnitudeSquared()
-        distance_between_object_and_collidedistance = (other.radius + self.collide_distance)**2
-        if distance_to_object_squared <= distance_between_object_and_collidedistance:
-            return True
+
+    def check_ghost_collision(self,ghost):
+        distance = self.position - ghost.position
+        squared_distance = distance.magnitudeSquared()
+
+        # collide_distance -> the minimum distance for a collision to happen
+        collide_distance = (self.collide_distance+ghost.collide_distance)
+        squared_collide_distance= collide_distance**2
+
+        if squared_distance <= squared_collide_distance:
+            return True # collision has happened
         
         return False
-

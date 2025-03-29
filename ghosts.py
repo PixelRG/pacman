@@ -1,314 +1,417 @@
+# import pygame
+# from constants import *
+# from templateForNodesAndObjects import Vector
+# from newmodes import BehaviourManager
+# from random import randint
+# from sprite import Sprite
+# import heapq
+# class Ghost(Sprite):
+#     def __init__(self, node, pacman=None):
+#         super().__init__(node)
+#         self.name = GHOST
+#         self.colour = CYAN
+#         self.directionMethod = self.goalDirection
+#         self.setSpeed(100)
+#         self.points = 200
+#         self.navigation_goal = Vector(9, 15)  # Default scatter target
+#         self.pacman = pacman
+#         self.behaviour = BehaviourManager(self)
+
+#     def getGridPosition(self):
+#         return (self.position.x // TILEWIDTH, self.position.y // TILEHEIGHT)
+    
+#     def update(self, dt):
+#         self.behaviour.update(dt)
+#         current_behaviour = self.behaviour.get_current_behaviour()
+        
+#         if current_behaviour == SCATTER:
+#             self.scatter()
+#         elif current_behaviour == CHASE:
+#             self.chase()
+        
+#         super().update(dt)
+
+#     def scatter(self):
+#         self.navigation_goal = Vector()  # (0,0)
+
+#     def chase(self):
+#         if self.pacman is not None:
+#             self.navigation_goal = self.pacman.position.copy()
+
+#     def start_fright(self):
+#         self.behaviour.set_fright_mode()
+#         if self.behaviour.get_current_behaviour() == FRIGHT:
+#             self.setSpeed(30)
+#             self.directionMethod = self.choose_random_direction
+
+#     def restore_normal_behaviour(self):
+#         self.setSpeed(100)
+#         self.directionMethod = self.goalDirection
+
+#     def goalDirection(self, directions):
+#         # Calculate direction that moves closest to goal
+#         distances = []
+#         for direction in directions:
+#             vec = self.current_node.position + self.directions[direction]*TILEWIDTH
+#             distances.append((vec - self.navigation_goal).magnitudeSquared())
+#         return directions[distances.index(min(distances))]
+
+
 import pygame
-from templateForNodesAndObjects import Vector
-from nodesinmaze import * 
 from constants import *
-from object import Object
-from modes import ModeController
+from templateForNodesAndObjects import Vector
+
+from newmodes import BehaviourManager
 from random import randint
+from sprite import Sprite
 import heapq
 
-class PriorityQueue:
+class PriorityQueue: # initialise the queue object
     def __init__(self):
-        self.elements = []
-        self.entry_counter = 0
+        self.elements = [] # list to hold queue elements
+        self.entry_counter = 0 # it's a counter that maintain order of elements
     def empty(self):
         return len(self.elements) == 0
     
-    def put(self, item, priority):
+    def put(self, item, priority): # Adds item to the priority queue with priority
         heapq.heappush(self.elements, (priority,self.entry_counter,item))
         self.entry_counter += 1
 
-    def get(self):
+    def get(self): # Retrives item with lowest priority
         return heapq.heappop(self.elements)[2]
                            
 
-class Ghost(Object):
-    def __init__(self,node,pacman = None, blinky = None):
-        Object.__init__(self,node)
+class Ghost(Sprite):
+    def __init__(self, start_node, scatter_node,nodeTable, respawn_node, pacman=None):
+        super().__init__(start_node)
         self.name = GHOST
+        self.colour = CYAN
         self.directionMethod = self.goalDirection
-        self.setSpeed(100)
+        self.setSpeed(90)
         self.points = 200
-        self.goal = Vector()
+
+        self.respawn_node = respawn_node  # location where ghost respawns
+        self.scatter_node = scatter_node
+        self.start_node = start_node
+        self.navigation_goal = self.scatter_node.position.copy() # this needs to be vector
+        
+        if self.scatter_node and self.start_node and self.navigation_goal:
+            print("Got the nodes")
+
+        self.collide_distance = int(5* TILEWIDTH / 16)
         self.pacman = pacman
-        self.mode = ModeController(self)
-        self.homeNode = node
-        self.blinky = blinky
+        self.behaviour = BehaviourManager(self)
         self.current_path = []
-        self.path_update_interval = 0.5  # the route gets updated by 0.5s
-        self.path_update_timer = 0 # the start timer
+        self.path_update_interval = 0.5
+        self.path_update_timer = 0
         self.fright_colour = BLUE
+        self.default_colour = CYAN
+      
+        self.nodes = nodeTable
+        
+        print(scatter_node.position.asTuple())
+
+    def getGridPosition(self):
+        return (self.position.x // TILEWIDTH, self.position.y // TILEHEIGHT)
+    
+    
+
+    def update(self, dt):
+        self.behaviour.update(dt)
+        current_behaviour = self.behaviour.get_current_behaviour()
+        
+        self.path_update_timer += dt
+        if self.path_update_timer >= self.path_update_interval:
+            self.path_update_timer = 0
+            if current_behaviour == SCATTER:
+                self.scatter()
+            elif current_behaviour == CHASE:
+                self.chase()
+        
+        if current_behaviour == FRIGHT:
+            if self.behaviour.frightened_duration - self.behaviour.timer < 3:
+                if int((self.behaviour.frightened_duration - self.behaviour.timer) * 5) % 2 == 0:
+                    self.colour = WHITE
+                else:
+                    self.colour = self.fright_colour
+        
+        super().update(dt)
+
+    def scatter(self):
+        self.navigation_goal = self.scatter_node.position.copy()
+
+    def chase(self):
+        if self.pacman is not None:
+            self.navigation_goal = self.pacman.position.copy()
 
 
-    def accessDirections(self): # used for checking of nearby nodes in aStarAlgorithm
-        if self.mode.current == SPAWN:
-            return [UP] # Ghosts can only go up when returning home
-        return [UP,DOWN,LEFT,RIGHT]
-    
-    def manhattenDistance(self,pos1,pos2): # used for estimating the distance to the goal direction
-        return abs(pos1.x - pos2.x) + abs(pos1.y-pos2.y)
-    
-    def aStarSearch(self,start,goal):
+    def start_respawning(self):
+        if self.behaviour.get_current_behaviour() == FRIGHT:
+            self.behaviour.activate_respawn_mode()
+            self.setSpeed(150)
+            self.navigation_goal = self.respawn_node.position.copy()
+            self.directionMethod = self.goalDirection
+
+    def accessDirections(self):
+        # Add any special direction restrictions here if needed
+        return [UP, DOWN, LEFT, RIGHT]
+
+    def manhattanDistance(self, pos1, pos2):
+        return abs(pos1.x - pos2.x) + abs(pos1.y - pos2.y)
+
+    def aStarSearch(self, start, goal):
         frontier = PriorityQueue()
-        frontier.put(start,0) # adds the node that the ghost is on
-        came_from = {} # dict object that stores the predeccesor node for each node
-
-        cost_so_far = {} # dict object that stores the culmulative cost for each node
-                        # the cost is the number of steps taken
-
-        came_from[start] = None # start node is set to none in the dict
-        cost_so_far[start] = 0 # cost of start is 0
-        self.current_path = [] # the path being made
+        frontier.put(start, 0)
+        came_from = {}
+        cost_so_far = {}
+        came_from[start] = None
+        cost_so_far[start] = 0
+        self.current_path = []
 
         while not frontier.empty():
-            current = frontier.get() # it gets the node with the lowest priority ie cost
+            current = frontier.get()
 
-            if current not in cost_so_far:
-                continue
             if current == goal:
                 break
-            
+
             for direction in self.accessDirections():
-                next_node = current.neighbours[direction] # it explores every valid neighbouring node
-                if next_node == None:
+                next_node = current.neighbours[direction]
+                if next_node is None:
                     continue
 
-                new_cost = cost_so_far[current] + 1 # the cost to is incremented by 1 because we are storing cost of next node
+                new_cost = cost_so_far[current] + 1
+                if next_node not in cost_so_far or new_cost < cost_so_far[next_node]:
+                    cost_so_far[next_node] = new_cost
+                    priority = new_cost + self.manhattanDistance(next_node.position, goal.position)
+                    frontier.put(next_node, priority)
+                    came_from[next_node] = current
 
-                if next_node not in cost_so_far or new_cost < cost_so_far[next_node]: #checks if the next node is been added to cost dict
-                    priority = new_cost + self.manhattenDistance(next_node.position, goal.position) # it estimates the total distance to the goal
-                    frontier.put(next_node,priority) # the next node is put into the queue
-                    came_from[next_node] = current # the next node references to the current node in the came from dict
-
+        # Reconstruct path
         current = goal
         while current != start:
             if current not in came_from:
                 return []
-            self.current_path.insert(0,current)
+            self.current_path.insert(0, current)
             current = came_from[current]
+            
         return self.current_path
-    
 
-    def showSpeed(self):
-        return self.speed
+    def goalDirection(self, directions):
+        # Try A* pathfinding first
+        target = None
+        if self.behaviour.get_current_behaviour() == SCATTER:
+            target = self.scatter_node
+        elif self.behaviour.get_current_behaviour() == RESPAWN:
+            target = self.respawn_node
         
-    def update(self,dt):
-        self.mode.update(dt)
-        self.path_update_timer += dt
-        if self.path_update_timer >= self.path_update_interval:
-            self.path_update_timer = 0
-            if self.mode.current == SCATTER:
-                self.scatter()
-            elif self.mode.current == CHASE:
-                self.chase()
 
-        if self.mode.current == FRIGHT:
-            if self.mode.limitingTime - self.mode.timer < 3:
-                if int((self.mode.limitingTime - self.mode.timer) * 5) % 2 == 0:
-                    self.colour = WHITE
-                else:
-                    self.colour = self.fright_colour
+        else:
+            target = self.pacman.current_node
 
-        Object.update(self,dt)
-
-    def scatter(self):
-        self.goal = Vector() # this position is (0,0)
-
-    def chase(self):
-        self.goal = self.pacman.position
-
-
-    def startFright(self):
-        self.mode.setFrightMode()
-        if self.mode.current == FRIGHT:
-            self.setSpeed(30)
-            self.directionMethod = self.randomDirection
-            self.colour = self.fright_colour
-    def normalMode(self):
-        self.setSpeed(100)
-        self.directionMethod = self.goalDirection
-        self.colour = self.defaultcolour  # Reset to original colour
-
-    def goalDirection(self,directions):
-        if self.pacman and self.node:
-            path = self.aStarSearch(self.node,self.pacman.node)
-
-        if path:
-            next_node = path[0]
-            vec = next_node.position - self.node.position
-            return self.vectorToDirection(vec) # this is called to decide the direction the ghost has to go to reach the next node
-        
-        if self.mode.current == SPAWN:
-            if self.mode and self.homeNode:
-                path = self.aStarSearch(self.node,self.spawnNode)
-
+        if self.navigation_goal:
+            target = self.find_nearest_node(self.navigation_goal)
+            if target and self.current_node:
+                path = self.aStarSearch(self.current_node, target)
+                
                 if path:
                     next_node = path[0]
-                    vec = next_node.position - self.node.position
-                    return self.vectorToDirection(vec) # this is called to decide the direction the ghost has to go to reach the next node
+                    vec = next_node.position - self.current_node.position
+                    # print("A star code running")
+                    return self.vectorToDirection(vec)
                 
-            
+
+        # If A star fails, fallback to greedy search using Manhattan distance
         distances = []
         for direction in directions:
-            vec = self.node.position + self.directions[direction]*TILEWIDTH - self.goal
-            distances.append(vec.magnitudeSquared())
-        return directions[distances.index(min(distances))]
     
-    def vectorToDirection(self,vector):
-        if vector.x > 0: 
+            current_vec = self.current_node.position + self.directions[direction] * TILEWIDTH
+            # Compare vectors directly
+            distances.append((current_vec - self.navigation_goal).magnitudeSquared())
+            # print("Greedy first algorithm is being used")
+        if distances:
+            return directions[distances.index(min(distances))]
+        return STOP # this is when Pacman and ghost are at the same position
+
+    def vectorToDirection(self, vector):
+        if vector.x > 0:
             return RIGHT
         if vector.x < 0:
             return LEFT
-        
         if vector.y > 0:
             return DOWN
         return UP
-    
+
+    def start_fright(self):
+        self.behaviour.set_fright_mode()
+        if self.behaviour.get_current_behaviour() == FRIGHT:
+            self.setSpeed(30)
+            self.directionMethod = self.choose_random_direction
+            self.colour = self.fright_colour
+
+    def restore_normal_behaviour(self):
+        self.setSpeed(90)
+        self.directionMethod = self.goalDirection
+        self.colour = self.default_colour
+
+    def find_nearest_node(self, position): #NEWLY ADDED
+        # Helper method to find nearest node to a position
+        min_distance = float("inf") # set to infinity
+        nearest_node = None
+        for node in self.nodes.values():  # Assuming access to node list
+            distance = (node.position - position).magnitudeSquared()
+            if distance < min_distance:
+                min_distance = distance
+                nearest_node = node
+        return nearest_node
+
     def reset(self):
-        Object.reset(self)
+        super().reset()
+        self.position = self.start_node.position.copy()
+        print("node copied")
         self.points = 200
         self.directionMethod = self.goalDirection
 
-    # Spawn phase
-    def spawn(self):
-        self.goal = self.spawnNode.position
+    def draw_target_indicator(self,screen):
+        if self.navigation_goal:
+            indicator_colour = BLACK
+            target_pos = (int(self.navigation_goal.x), int(self.navigation_goal.y))
 
-    def setSpawnNode(self, node):
-        self.spawnNode = node
+            pygame.draw.circle(screen,indicator_colour,target_pos,radius = 5)
 
-    def startSpawn(self):
-        self.mode.setSpawnMode()
-        if self.mode.current == SPAWN:
-            self.setSpeed(150)
-            self.directionMethod = self.goalDirection
-            self.colour = self.defaultcolour
-            self.spawn()
-            self.path_update_timer = self.path_update_interval
-
-    def render(self, screen, offset_x=0, offset_y=0):
-        super().render(screen, offset_x, offset_y)
-        SHOW_PATH = True
-        if SHOW_PATH:  # Add a constant SHOW_PATH = True/False
-            for node in self.current_path:
-                pos = node.position + Vector(offset_x, offset_y)
-                pygame.draw.circle(screen, YELLOW, (int(pos.x), int(pos.y)), 4)
+    def render(self,screen):
+        super().render(screen)
+        self.draw_target_indicator(screen)
+# region GHOSTS
 
 class Blinky(Ghost):
-    def __init__(self,node,pacman = None, blinky = None):
-        Ghost.__init__(self,node,pacman, blinky)
+    def __init__(self,start_node,scatter_node,nodeTable,respawn_node, pacman = None):
+        super().__init__(start_node,scatter_node,nodeTable,respawn_node, pacman)
         self.name = BLINKY
-        self.defaultcolour = RED
-        self.colour = self.defaultcolour
-        self.visible = True
-
+        self.colour = RED
+        self.default_colour = RED
+        
+        #self.visible = True
 
 class Pinky(Ghost):
-    def __init__(self,node, pacman = None, blinky = None):
-        Ghost.__init__(self,node,pacman,blinky)
+    def __init__(self, start_node, scatter_node, nodeTable,spawn_node, pacman=None):
+        super().__init__(start_node, scatter_node, nodeTable,spawn_node,pacman)
         self.name = PINKY
-        self.defaultcolour = PINK
-        self.colour = self.defaultcolour
-        self.visible = True
-
-    def scatter(self):
-        self.goal = Vector(TILEWIDTH*COLS,0)
+        self.colour = PINK
+        self.default_colour = PINK
+        #self.visible = True
 
     def chase(self):
-        self.goal = self.pacman.position + self.pacman.directions[self.pacman.direction] * TILEWIDTH *4
+        # Target 4 tiles ahead of Pacman's direction
+        if self.pacman and self.pacman.direction != STOP:
+            target_offset = self.pacman.directions[self.pacman.direction] * TILEWIDTH * 4
+            target_pos = self.pacman.position + target_offset
+            self.navigation_goal = self.find_nearest_node(target_pos).position.copy()
 
 
 class Inky(Ghost):
-    def __init__(self, node, pacman = None, blinky = None):
-        Ghost.__init__(self,node,pacman,blinky)
-        self.name =INKY
-        self.defaultcolour = TEAL
-        self.colour = self.defaultcolour
-        self.visible = True
-
-    def scatter(self):
-        self.goal = Vector(TILEWIDTH*COLS, TILEWIDTH * ROWS)
-
+    def __init__(self, start_node, scatter_node, nodeTable,respawn_node, pacman=None,blinky = None):
+        super().__init__(start_node, scatter_node, nodeTable, respawn_node, pacman)
+        self.name = INKY
+        self.colour = TEAL
+        self.default_colour = TEAL
+        self.blinky = blinky
 
     def chase(self):
-        vec1 = self.pacman.position + self.pacman.directions[self.pacman.direction] * 2 * TILEWIDTH
-        vec2 = (vec1 - self.blinky.position) * 2
-        self.goal = self.blinky.position + vec2
+        if self.pacman and self.blinky:
+            # calculate inky target position
+            # its target -> the tile that is 2 tiles ahead of Pacman
+            pacman_dir = self.pacman.directions[self.pacman.direction]
+            pivot = self.pacman.position + pacman_dir * TILEWIDTH * 2
+
+            # calculate the vector from blinky to pivot
+            blinky_to_pivot = pivot - self.blinky.position
+
+            target_pos = self.blinky.position + blinky_to_pivot * 2
+
+            target_node = self.find_nearest_node(target_pos)
+
+            if target_node:
+                self.navigation_goal = target_node.position.copy()
 
 
 class Clyde(Ghost):
-    def __init__(self, node, pacman = None, blinky = None):
-        Ghost.__init__(self,node,pacman,blinky)
+    def __init__(self, start_node, scatter_node, nodeTable,respawn_node, pacman=None):
+        super().__init__(start_node, scatter_node, nodeTable, respawn_node, pacman)
         self.name = CLYDE
-        self.defaultcolour = ORANGE
-        self.colour = self.defaultcolour
-        self.visible = True
-
-    def scatter(self):
-        self.goal = Vector(0,TILEWIDTH*ROWS)
+        self.colour = ORANGE
+        self.default_colour = ORANGE
+        
 
     def chase(self):
-        distance_to_pacman = self.pacman.position - self.position
-        distance_squared = distance_to_pacman.magnitudeSquared()
+        distance = self.position - self.pacman.position
+        distance_squared = distance.magnitudeSquared()
 
-        if distance_squared <= (TILEWIDTH * 8) **2:
-            self.scatter()
+        threshold = (8 * TILEWIDTH)**2
+
+        if distance_squared > threshold:
+            self.navigation_goal = self.pacman.position.copy() # remedial action
+            print("clyde will chase pacman")
 
         else:
-            self.goal = self.pacman.position + self.pacman.directions[self.pacman.direction] * TILEWIDTH * 4
+            self.navigation_goal = self.scatter_node.position.copy()
+            print("clyde will not chase Pacman")
 
 
+class GhostManager():
+    def __init__(self,pacman,nodes):
+        self.pacman = pacman
+        self.nodes = nodes
+        self.initialise_ghosts()
 
-class GhostGroup():
-    def __init__(self,node,pacman):
-        self.blinky = Blinky(node,pacman)
-        self.pinky = Pinky(node,pacman)
-        self.inky = Inky(node,pacman,self.blinky)
-        self.clyde = Clyde(node,pacman)
-        self.ghosts = [self.blinky,self.pinky,self.inky,self.clyde]
+    def initialise_ghosts(self):
 
-    def __iter__(self):
-        return iter(self.ghosts)
-    
+        starting_node = self.nodes.get_node(15,12)
 
+        spawn_node = self.nodes.get_node(15,13) # remedial action fix, i made spawn_node an attribute for all
+        self.blinky = Blinky(starting_node,self.get_scatter_node(BLINKY),self.nodes.nodeTable,spawn_node,self.pacman)
+        self.pinky = Pinky(starting_node,self.get_scatter_node(PINKY),self.nodes.nodeTable,spawn_node,self.pacman)
+        self.inky = Inky(starting_node,self.get_scatter_node(INKY),self.nodes.nodeTable,spawn_node,self.pacman,self.blinky)
+        self.clyde = Clyde(starting_node,self.get_scatter_node(CLYDE), self.nodes.nodeTable, spawn_node,self.pacman)
+        self.ghosts = [self.blinky,self.inky,self.pinky,self.clyde]
+
+    def get_scatter_node(self,corner):
+        # these variables represent the corners of the maze
+        top_left = self.nodes.get_node(1, 5)                  # top left
+        top_right = self.nodes.get_node(COLS-2, 5)            # top right
+        bottom_left = self.nodes.get_node(1, ROWS+2)          # bottom left corner
+        bottom_right = self.nodes.get_node(COLS-2, ROWS+2)    # bottom right corner
+
+        # contains the locations that each ghost has to patrol
+        scatter_nodes = {BLINKY:top_left,
+                         INKY:top_right,
+                         CLYDE:bottom_left,
+                         PINKY:bottom_right}
+
+        if corner in scatter_nodes:
+            return scatter_nodes[corner]
+        
+
+
+        
     def update(self,dt):
         for ghost in self.ghosts:
             ghost.update(dt)
 
-    def startFright(self):
+    def render(self,screen):
         for ghost in self.ghosts:
-            ghost.startFright()
-        self.resetPoints()
+            ghost.render(screen)
 
-    def setSpawnNode(self, node):
+    def retrieve_ghost_list(self):
+        return self.ghosts # returns all ghosts
+    
+    def start_fright(self): 
         for ghost in self.ghosts:
-            ghost.setSpawnNode(node)
+            ghost.start_fright()
 
-    def updatePoints(self):
-        for ghost in self.ghosts:
-            ghost.points = ghost.points * 2
-
-    def resetPoints(self):
-        for ghost in self.ghosts:
-            ghost.points = 200
-
-    def reset(self):
+    def reset(self): # resets all ghost states
         for ghost in self.ghosts:
             ghost.reset()
-
-    def hide(self):
-        for ghost in self.ghosts:
-            ghost.visible = False
-
-    def show(self):
-        for ghost in self.ghosts:
-            ghost.visible = True
-
-    def render(self,screen,offset_x,offset_y):
-        for ghost in self.ghosts:
-            ghost.render(screen,offset_x,offset_y)
-
-
-
-
-
         
+
+
+

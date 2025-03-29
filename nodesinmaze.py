@@ -8,188 +8,164 @@ class Node():
     def __init__(self,x,y):
         self.position = Vector(x,y)
         self.neighbours = {UP:None, DOWN:None, LEFT:None, RIGHT:None, PORTAL:None}
-        self.access = {UP: [PACMAN,BLINKY,INKY,PINKY,CLYDE],
-                       DOWN: [PACMAN,BLINKY,INKY,PINKY,CLYDE],
-                       LEFT: [PACMAN,BLINKY,INKY,PINKY,CLYDE],
-                       RIGHT: [PACMAN,BLINKY,INKY,PINKY,CLYDE]}
-        
+        self.colour = SILVER
 
-    
-    def __hash__(self):
-        return hash(self.position)
-  
 
-    def render(self,screen,offset_x = 0, offset_y = 0,homekey = None):
-        node_colour = SILVER  # Default color (RED for normal node)
-        if homekey and self.position.asTuple() == homekey:  # Compare positions
-            node_colour = BLUE  # Color for homekey node (use any color you want)
-        offset_pos = self.position + Vector(offset_x,offset_y)
+    def render(self,screen):
         for n in self.neighbours.keys():
-            if self.neighbours[n] is not None:
-                line_start = offset_pos.asTuple()
-                line_end = (self.neighbours[n].position+ Vector(offset_x,offset_y)).asTuple()
-                pygame.draw.line(screen, WHITE, line_start, line_end, 4)                
-                pygame.draw.circle(screen, node_colour, offset_pos.asInt(), 12)
+            if self.neighbours[n] is not None: 
+                line_start = self.position.asTuple()
+                line_end = self.neighbours[n].position.asTuple() 
+                pygame.draw.line(screen, WHITE, line_start, line_end, 4) # displays the connection between nodes          
+                pygame.draw.circle(screen, self.colour, self.position.asInt(), 12) # draws the nodes
 
-    def denyAccess(self,direction,object):
-        if object.name in self.access[direction]:
-            self.access[direction].remove(object.name)
+class NodeManager:
+    def __init__(self, maze_layout):
+        self.nodeTable = {} # maps (x,y) coordinates to Node objects
+        # Symbols from maze file: "x" and "P" are nodes, "," are paths
+        self.node_symbols = {"+", "P"} 
+        self.path_symbols = {"."} 
+        # Maze layout loaded as a 2D numpy array for grid traversao
+        self.maze = self.load_maze(maze_layout) # saves the layout of the maze as an array
+        self.instantiate_nodes() # Creates nodes from symbols in maze file
+        self.build_graph() # connects nodes to form the graph
+        self.gateway = None
 
-    def allowAccess(self,direction, object):
-        if object.name not in self.access[direction]:
-            self.access[direction].append(object.name)
-   
+    def load_maze(self, filename): 
+        # converts text file "maze container" to an array
+        with open(filename) as f:
+            return np.array([list(line.strip()) for line in f]) 
 
-class NodeGroup():
-    def __init__(self,level):
-        self.level = level
-        self.nodesTable = {}
-        self.node_symbol = ["+","P"]
-        self.path_Symbol = ["."]
-        data = self.readMazeFile(level)
-        self.createNodeTable(data)
-        self.connectHorizontally(data)
-        self.connectVertically(data)
-        self.homekey = None
+    def instantiate_nodes(self): 
+        # Instantiates nodes using PIXEL coordinates
+        rows, cols = self.maze.shape
+        for y in range(rows):
+            for x in range(cols):
+                if self.maze[y][x] in self.node_symbols:
+                    # px,py represent pixel_x and pixel_coordinate
+            
+                    px, py = x * TILEWIDTH + OFFSET_X , y * TILEHEIGHT + OFFSET_Y
+
+                    #new node is added into the table
+                    self.nodeTable[(px, py)] = Node(px, py) 
+
+    
+    
+    def join_nodes(self,node1,dir1,node2,dir2): # forms bidirectional connections
+        #if statement validates if the directions are opposite
+        if dir1 * -1 == dir2: 
+            node1.neighbours[dir1] = node2
+            node2.neighbours[dir2] = node1
+        else:
+            return None
+
+    
+
+    def connect_horizontal(self, data, x_offset=0, y_offset=0):
+        rows, cols = data.shape
+        for y in range(rows):
+            prev = None
+            for x in range(cols):
+                # Calculate actual grid position with offsets
+                grid_x = x
+                grid_y = y
+                
+                current = self.get_node(grid_x, grid_y,x_offset,y_offset)
+                if current:
+                    if prev:
+                        self.join_nodes(prev, RIGHT, current, LEFT)
+                    prev = current
+                elif data[y][x] not in self.path_symbols:
+                    prev = None  # Break chain at walls
+
+    def connect_vertical(self, data, x_offset=0, y_offset=0):
+        
+        rows, cols = data.shape
+        for x in range(cols):
+            prev = None
+            for y in range(rows):
+                # Calculate actual grid position with offsets
+                
+                grid_x,grid_y = x,y
+                current = self.get_node(grid_x, grid_y,x_offset,y_offset)
+                if current:
+                    if prev:
+                        self.join_nodes(prev, DOWN, current, UP)
+                    prev = current
+                elif data[y][x] not in self.path_symbols:
+                    prev = None  # Break chain at walls
+
+    def build_graph(self):
+        self.connect_horizontal(self.maze, OFFSET_X,OFFSET_Y)
+        self.connect_vertical(self.maze,OFFSET_X,OFFSET_Y)
+
+
+
+
+    def get_node(self, x, y, offset_x =0 ,offset_y = 0): # retrieves the node
+        # convert grid (x,y) to pixel coordinates to retrieve a Node object
+        return self.nodeTable.get((x * TILEWIDTH + offset_x, y * TILEHEIGHT + offset_y))
+
+
+    def getStartTempNode(self): # returns the first node(top corner node)
+        nodeTable = list(self.nodeTable.values())
+        return nodeTable[0]
+    
+    def render(self,screen):
+         # iterates through the nodes to render them
+        for node in self.nodeTable.values(): 
+            node.render(screen)
+
+    def render_one_node(self,node,colour,screen):
+        node.colour = colour
+        node.render(screen)
+
+    def create_ghost_home(self, grid_x, grid_y):
+        home_data = np.array([
+            ['X','X','X','X','X','X','+','X','X','X','X','X'],
+            ['X','X','X','X','X','X','.','X','X','X','X','X'],
+            ['X','X','X','+','X','X','.','X','X','+','X','X'],
+            ['X','X','X','+','.','.','+','.','.','+','X','X'],
+            ['X','X','X','X','X','X','X','X','X','X','X','X']
+        ])
+        
+        # Calculate pixel offsets based on grid position
+        x_offset = grid_x * TILEWIDTH + OFFSET_X
+        y_offset = grid_y * TILEHEIGHT + OFFSET_Y
+        
+        # Create nodes for ghost home
+        for y in range(5):
+            for x in range(12):
+                if home_data[y][x] in self.node_symbols:
+                    px = x * TILEWIDTH + x_offset
+                    py = y * TILEHEIGHT + y_offset
+                    self.nodeTable[(px, py)] = Node(px, py)
+        
+        # Connect nodes within ghost home
+        self.connect_horizontal(home_data, x_offset, y_offset)
+        self.connect_vertical(home_data, x_offset, y_offset)
+        
+        # Rretuns the centre grid position
+        return (grid_x + 6, grid_y)
+    def connect_home_exit(self, home_center, maze_pos, direction):
+        """Simplified version of connectGhostHomeNodes"""
+        # Convert grid positions to pixel coordinates
+        
+        # home_center = center of ghost home in grid coordinates
+        # maze_pos = connecting point in main maze grid coordinates
+        home_px = home_center[0] * TILEWIDTH + OFFSET_X
+        home_py = home_center[1] * TILEHEIGHT + OFFSET_Y
+        maze_px = maze_pos[0] * TILEWIDTH + OFFSET_X
+        maze_py = maze_pos[1] * TILEHEIGHT + OFFSET_Y
+        
+        # Get node objects
+        home_node = self.nodeTable.get((home_px, home_py))
+        maze_node = self.nodeTable.get((maze_px, maze_py))
+
+        # to validate home node has been made
+        home_node.colour = WHITE
 
         
-    """
-    - self.nodesTable is a dictionary (better way of accessing data rather than using an array)
-        It uses the coordinate of each node
-        coordinate: node object
-    
-    """
-  
-    def readMazeFile(self,textfile): # this produces a 2d array using the text file that is imported from the file test_run
-        with open(textfile, 'r') as f:
-            data = [list(line.strip()) for line in f]  # Split lines into characters
-        return np.array(data)  #  2D array
-
-
-    """ This is for createNodeTable
-    - data.shape returns a tuple that shows the number of rows and the number
-    of columns
-    - data.shape[0] returns the number of rows
-    - row represents y coordinate
-    - col represents x coordinate
-
-
-    """
-    def createNodeTable(self,data,xoffset=0,yoffset=0):
-        for row in list(range(data.shape[0])): # goes through y coordinate of a cell
-            for col in list(range(data.shape[1])): # goes through x coordinate
-                if data[row][col] in self.node_symbol:
-                    x,y = self.constructKey(col + xoffset, row + yoffset)
-                    self.nodesTable[(x,y)] = Node(x,y)
-
-
-    """
-    connect horizontally forms a connection between horizontal nodes
-    - every node has a dictionary in built thanks to the class that contains LEFT,RIGHT,UP, DOWN
-        - we can set the RIGHT or LEFT of a node to be equal to the adjacent node
-
-    - the function iterates through each node horizontally
-        if the current node is a wall, the functions discontinues the connection.
-        it makes a new one when it finds a node
-    """
-
-    def connectHorizontally(self,data,xoffset = 0,yoffset=0):
-        for row in range(data.shape[0]):
-            key = None
-            for col in range(data.shape[1]):
-                if data[row][col] in self.node_symbol:
-                    if key is None: 
-                        key = self.constructKey(col + xoffset, row+yoffset)
-                    else: # when key contains a tuple
-                        otherkey = self.constructKey(col + xoffset, row + yoffset)
-                        self.nodesTable[key].neighbours[RIGHT] = self.nodesTable[otherkey] # 
-                        self.nodesTable[otherkey].neighbours[LEFT] = self.nodesTable[key] # 
-                        key = otherkey # sets the key to now be the adjacent key that was used
-                elif data[row][col] not in self.path_Symbol: # if the current node is a wall, the code ends the horizontal connection being formed
-                    key = None  
-
-   # transpose swaps the columns and rows       
-    def connectVertically(self, data, xoffset=0, yoffset=0):
-        dataT = data.transpose() 
-        for col in range(dataT.shape[0]):
-            key = None
-            for row in range(dataT.shape[1]):
-                if dataT[col][row] in self.node_symbol:
-                    if key is None:
-                        key = self.constructKey(col+xoffset, row+yoffset)
-                    else:
-                        otherkey = self.constructKey(col+xoffset, row+yoffset)
-                        self.nodesTable[key].neighbours[DOWN] = self.nodesTable[otherkey]
-                        self.nodesTable[otherkey].neighbours[UP] = self.nodesTable[key]
-                        key = otherkey
-                elif dataT[col][row] not in self.path_Symbol:
-                    key = None
-        
-    def constructKey(self, x, y):
-        return x * TILEWIDTH, y * TILEHEIGHT
-    
-    def getNodeFromTiles(self,x,y):
-        key = self.constructKey(x,y)
-        return self.nodesTable.get(key)
-    def getStartTempNode(self):
-        nodes = list(self.nodesTable.values())
-        return nodes[0]
-    
-    def render(self,screen,offset_x = 0, offset_y = 0):
-        for node in self.nodesTable.values():
-            node.render(screen,offset_x,offset_y, homekey=self.homekey)
-
-        
-
-    def findPortalNodes(self,vertical_range = 10): # this needs to be checked out
-        nodes = list(self.nodesTable.values())
-        
-        all_y = [node.position.y for node in nodes]
-        mid_y = (min(all_y) + max(all_y)) // 2
-        candidates = []
-        for node in nodes:
-            if (mid_y - vertical_range <= node.position.y <= mid_y+vertical_range):
-                if node.position[1]:
-                    candidates.append(node)
-
-        if len(candidates) >= 2:
-            return candidates[0]
-
-    def setupPortalPair(self, pair1, pair2):
-        key1 = self.constructKey(*pair1)
-        key2 = self.constructKey(*pair2)
-        if key1 in self.nodesTable.keys() and key2 in self.nodesTable.keys():
-            self.nodesTable[key1].neighbors[PORTAL] = self.nodesTable[key2]
-            self.nodesTable[key2].neighbors[PORTAL] = self.nodesTable[key1]
-    
-    def createHomeNodes(self,xoffset,yoffset):# 11 columns wide (index 0-10)
-        ghosthomedata = np.array([
-            ['X', 'X', 'X', 'X', 'X', 'X', '+', 'X', 'X', 'X', 'X', 'X'],  # Row 0
-            ['X', 'X', 'X', 'X', 'X', 'X', '.', 'X', 'X', 'X', 'X', 'X'],  # Row 1
-            ['X', 'X', 'X', '+', 'X', 'X', '.', 'X', 'X', '+', 'X', 'X'],  # Row 2 (center)
-            ['X', 'X', 'X', '+', '.', '.', '+', '.', '.', '+', 'X', 'X'],  # Row 3
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']   # Row 4
-        ], dtype="<U1") 
-    
-        self.createNodeTable(ghosthomedata,xoffset,yoffset)
-        self.connectHorizontally(ghosthomedata,xoffset,yoffset)
-        self.connectVertically(ghosthomedata,xoffset,yoffset)
-        self.homekey = self.constructKey(xoffset+6,yoffset)
-        return self.homekey
-
-    def connectGhostHomeNodes(self,homekey,otherKey,direction):
-        key = self.constructKey(*otherKey)
-        self.nodesTable[homekey].neighbours[direction] = self.nodesTable[key]
-        self.nodesTable[key].neighbours[direction*-1] = self.nodesTable[homekey]
-
-
-   
-
-    def allowHomeAccess(self,object):
-        self.nodesTable[self.homekey].allowAccess(DOWN,object)
-
-    def denyHomeAccess(self,object):
-        self.nodesTable[self.homekey].denyAccess(DOWN,object)
-
-    
-    
+        # Create bidirectional connection
+        if home_node and maze_node:
+            self.join_nodes(home_node, direction, maze_node, direction * -1)
