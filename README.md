@@ -8,8 +8,8 @@ This game was modified by introducing:
 
 ## Development story
 This project was built when I was doing my final year as an A level student.  
-I only spent about 3 months in this project.
-This game is far from polished in terms of game design and meeting all of my goals for my computer science NEA
+I only spent about 6 months in this project.
+This game is far from polished in terms of game design and met some all of my goals
 
 ## Features of the project accomplished:  
 * Maze generation using depth first algorithm with recursive backtracking
